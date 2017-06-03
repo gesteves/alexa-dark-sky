@@ -1,0 +1,14 @@
+{
+  "name": "alexa-dark-sky-node",
+  "version": "1.0.0",
+  "description": "Alexa skill for Dark Sky forecasts",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "alexa-sdk": "^1.0.9"
+  }
+}
