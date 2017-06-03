@@ -6,8 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "author": "Guillermo Esteves",
   "license": "ISC",
+  "repository": "https://github.com/gesteves/alexa-dark-sky-node",
   "dependencies": {
     "alexa-sdk": "^1.0.9"
   }
