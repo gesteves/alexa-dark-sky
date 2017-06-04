@@ -12,7 +12,11 @@ exports.handler = function (event, context, callback) {
 const handlers = {
   'LaunchRequest': LaunchRequestHandler,
   'LocationForecastIntent': LocationForecastIntentHandler,
-  'EchoForecastIntent': EchoForecastIntentHandler
+  'EchoForecastIntent': EchoForecastIntentHandler,
+  'AMAZON.StopIntent': StopIntentHandler,
+  'AMAZON.CancelIntent': CancelIntentHandler,
+  'AMAZON.HelpIntent': HelpIntentHandler,
+  'Unhandled': UnhandledIntentHandler
 };
 
 /*
@@ -118,6 +122,22 @@ function LocationForecastIntentHandler() {
       forecast.formatted_address = formatted_address;
       intent.emit(':tell', forecast_ssml(forecast));
     });
+}
+
+function StopIntentHandler() {
+  this.emit(':tell', "Okay");
+}
+
+function CancelIntentHandler() {
+  this.emit(':tell', "Okay");
+}
+
+function HelpIntentHandler() {
+  this.emit(':ask', "To get the forecast for your current location, ask 'how's the weather?'. You can also specify a location, like 'how's the weather in new york'");
+}
+
+function UnhandledIntentHandler() {
+  this.emit(':ask', "I didn't get that. To get the forecast for your current location, ask 'how's the weather?'. You can also specify a location, like 'how's the weather in new york'");
 }
 
 /*
