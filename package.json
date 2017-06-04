@@ -12,6 +12,7 @@
   "dependencies": {
     "alexa-sdk": "^1.0.9",
     "async": "^2.4.1",
+    "redis": "^2.7.1",
     "request": "^2.81.0"
   }
 }

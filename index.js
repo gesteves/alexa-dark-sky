@@ -1,8 +1,11 @@
 const Alexa = require('alexa-sdk');
 const request = require('request');
 const async = require('async');
+const Redis = require('redis');
+const redis = Redis.createClient(process.env.REDIS_URL);
 
 exports.handler = function (event, context, callback) {
+  // TODO: There's gotta be a better way of storing data in Lambda
   const alexa = Alexa.handler(event, context);
   alexa.appId = process.env.ALEXA_APP_ID;
   alexa.registerHandlers(handlers);
@@ -11,42 +14,100 @@ exports.handler = function (event, context, callback) {
 
 const handlers = {
     'LaunchRequest': function () {
-        this.emit(':ask', 'What do you want to know?', "I'm sorry, could you say that again?");
+      let intent = this;
+      let user_id = this.event.session.user.userId;
+      let device_id = this.event.context.System.device.deviceId;
+      let consent_token = this.event.session.user.permissions.consentToken;
+      async.waterfall([
+        function (next) {
+          redis.set(`lambda:alexa:user:${user_id}`, consent_token, next);
+        },
+        function (response, next) {
+          intent.emit(':ask', 'What do you want to know?', "I'm sorry, could you say that again?");
+        }
+      ]);
     },
-    'ForecastIntent': function () {
+    'LocationForecastIntent': function () {
       let location;
+      let intent = this;
+      let formatted_address;
+
       if (this.event.request.intent.slots.address.value) {
         location = this.event.request.intent.slots.address.value;
       } else if (this.event.request.intent.slots.city.value) {
         location = this.event.request.intent.slots.city.value;
       }
 
-      if (typeof location === 'undefined') {
-        this.emit(':ask', "I'm sorry, I couldn't understand your location. Can you try a different one?", "I'm sorry, could you say that again?");
-      } else {
-        let intent = this;
-        let formatted_address;
-        async.waterfall([
-          function (next) {
-            request(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${process.env.MAPS_API_KEY}`, next);
-          },
-          function (error, body, next) {
-            let geocoded_location = JSON.parse(body);
-            if (geocoded_location.status === 'OK') {
-              formatted_address = geocoded_location.results[0].formatted_address;
-              let lat = geocoded_location.results[0].geometry.location.lat;
-              let long = geocoded_location.results[0].geometry.location.lng;
-              request(`https://api.darksky.net/forecast/${process.env.DARKSKY_API_KEY}/${lat},${long}`, next);
-            }
-          },
-          function (error, body, next) {
-            let forecast = JSON.parse(body);
-            forecast.formatted_address = formatted_address;
-            intent.emit(':tell', forecast_ssml(forecast));
+      async.waterfall([
+        function (next) {
+          request(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${process.env.MAPS_API_KEY}`, next);
+        },
+        function (error, body, next) {
+          let geocoded_location = JSON.parse(body);
+          if (geocoded_location.status === 'OK') {
+            formatted_address = geocoded_location.results[0].formatted_address;
+            let lat = geocoded_location.results[0].geometry.location.lat;
+            let long = geocoded_location.results[0].geometry.location.lng;
+            request(`https://api.darksky.net/forecast/${process.env.DARKSKY_API_KEY}/${lat},${long}`, next);
           }
-        ]);
-      }
+        },
+        function (error, body, next) {
+          let forecast = JSON.parse(body);
+          forecast.formatted_address = formatted_address;
+          intent.emit(':tell', forecast_ssml(forecast));
+        }
+      ]);
     },
+    'EchoForecastIntent': function () {
+      let intent = this;
+      let user_id = this.event.session.user.userId;
+      let device_id = this.event.context.System.device.deviceId;
+      let formatted_address;
+
+      async.waterfall([
+        function (next) {
+          redis.get(`lambda:alexa:user:${user_id}`, next);
+        },
+        function (token, next) {
+          let options = {
+            url: `https://api.amazonalexa.com/v1/devices/${device_id}/settings/address`,
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          };
+          request(options, next);
+        },
+        function (error, body, next) {
+          let address = JSON.parse(body);
+          var location_array = [];
+          location_array.push(address.addressLine1);
+          location_array.push(address.addressLine2);
+          location_array.push(address.addressLine3);
+          location_array.push(address.city);
+          location_array.push(address.stateOrRegion);
+          location_array.push(address.countryCode);
+          location_array.push(address.postalCode);
+          let location = location_array.filter(function (i) {
+            return i;
+          }).join(', ');
+          request(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${process.env.MAPS_API_KEY}`, next);
+        },
+        function (error, body, next) {
+          let geocoded_location = JSON.parse(body);
+          if (geocoded_location.status === 'OK') {
+            formatted_address = geocoded_location.results[0].formatted_address;
+            let lat = geocoded_location.results[0].geometry.location.lat;
+            let long = geocoded_location.results[0].geometry.location.lng;
+            request(`https://api.darksky.net/forecast/${process.env.DARKSKY_API_KEY}/${lat},${long}`, next);
+          }
+        },
+        function (error, body, next) {
+          let forecast = JSON.parse(body);
+          forecast.formatted_address = formatted_address;
+          intent.emit(':tell', forecast_ssml(forecast));
+        }
+      ]);
+    }
 };
 
 function forecast_ssml(forecast) {
