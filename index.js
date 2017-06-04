@@ -104,12 +104,11 @@ function getEchoAddress(device_id, consent_token) {
     },
     json: true
   };
-
   return request(opts).then(echoAddressToString);
 }
 
 function geocodeAddress(address) {
-  opts = {
+  let opts = {
     url: `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${process.env.MAPS_API_KEY}`,
     json: true
   };
@@ -125,7 +124,7 @@ function geocodeAddress(address) {
 }
 
 function getForecast(geocoded_address) {
-  opts = {
+  let opts = {
     url: `https://api.darksky.net/forecast/${process.env.DARKSKY_API_KEY}/${geocoded_address.latitude},${geocoded_address.longitude}`,
     json: true
   };
