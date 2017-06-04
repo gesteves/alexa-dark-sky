@@ -15,13 +15,14 @@ exports.handler = function (event, context, callback) {
 };
 
 const handlers = {
-  'LaunchRequest': LaunchRequestHandler,
-  'LocationForecastIntent': LocationForecastIntentHandler,
-  'EchoForecastIntent': EchoForecastIntentHandler,
-  'AMAZON.StopIntent': StopIntentHandler,
-  'AMAZON.CancelIntent': CancelIntentHandler,
-  'AMAZON.HelpIntent': HelpIntentHandler,
-  'Unhandled': UnhandledIntentHandler
+  'LaunchRequest': launchRequestHandler,
+  'LocationForecastIntent': locationForecastIntentHandler,
+  'EchoForecastIntent': echoForecastIntentHandler,
+  'TemperatureIntent': temperatureIntentHandler,
+  'AMAZON.StopIntent': stopIntentHandler,
+  'AMAZON.CancelIntent': cancelIntentHandler,
+  'AMAZON.HelpIntent': helpIntentHandler,
+  'Unhandled': unhandledIntentHandler
 };
 
 /*
@@ -29,7 +30,7 @@ const handlers = {
 */
 
 // Launch request, i.e. "Alexa, open Dark Sky"
-function LaunchRequestHandler () {
+function launchRequestHandler () {
   let intent = this;
   let user_id = this.event.session.user.userId;
   let device_id = this.event.context.System.device.deviceId;
@@ -42,7 +43,7 @@ function LaunchRequestHandler () {
 // Handle a forecast intent when the user has not included a location ("what's the weather").
 // In this case, get the forecast for the address set in the Echo, using the consent token.
 // TODO: Handle the case where the address is not set or the user hasn't granted permission.
-function EchoForecastIntentHandler() {
+function echoForecastIntentHandler() {
   let user_id = this.event.session.user.userId;
   let device_id = this.event.context.System.device.deviceId;
   let consent_token = this.attributes.consent_token;
@@ -87,13 +88,13 @@ function EchoForecastIntentHandler() {
     })
     .then(forecast => {
       forecast.formatted_address = formatted_address;
-      this.emit(':tellWithCard', forecast_ssml(forecast), 'Weather Forecast', forecast_plain(forecast), forecast_image(forecast));
+      this.emit(':tellWithCard', forecastSsml(forecast), 'Weather Forecast', forecastPlain(forecast), forecastImage(forecast));
     });
 }
 
 // Handle a forecast intent when the user has included a city ("what's the weather in DC"),
 // or an address ("what's the address in 1600 pennsylvania avenue").
-function LocationForecastIntentHandler() {
+function locationForecastIntentHandler() {
   let location = this.event.request.intent.slots.city.value || this.event.request.intent.slots.address.value;
   let formatted_address;
 
@@ -123,23 +124,64 @@ function LocationForecastIntentHandler() {
     })
     .then(forecast => {
       forecast.formatted_address = formatted_address;
-      this.emit(':tellWithCard', forecast_ssml(forecast), 'Weather Forecast', forecast_plain(forecast), forecast_image(forecast));
+      this.emit(':tellWithCard', forecastSsml(forecast), 'Weather Forecast', forecastPlain(forecast), forecastImage(forecast));
     });
 }
 
-function StopIntentHandler() {
+// Returns the current, high, and low temperature at the Echo's location
+// TODO: Handle the case where the address is not set or the user hasn't granted permission.
+function temperatureIntentHandler() {
+  let user_id = this.event.session.user.userId;
+  let device_id = this.event.context.System.device.deviceId;
+  let consent_token = this.attributes.consent_token;
+  let formatted_address;
+
+  let opts = {
+    url: `https://api.amazonalexa.com/v1/devices/${device_id}/settings/address`,
+    headers: {
+      'Authorization': `Bearer ${consent_token}`
+    },
+    json: true
+  };
+
+  request(opts)
+    .then(address => {
+      let location = echoAddressToString(address);
+      opts = {
+        url: `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${process.env.MAPS_API_KEY}`,
+        json: true
+      };
+      return request(opts);
+    })
+    .then(geocoded => {
+      if (geocoded.status === 'OK') {
+        let lat = geocoded.results[0].geometry.location.lat;
+        let long = geocoded.results[0].geometry.location.lng;
+        opts = {
+          url: `https://api.darksky.net/forecast/${process.env.DARKSKY_API_KEY}/${lat},${long}`,
+          json: true
+        };
+        return request(opts);
+      }
+    })
+    .then(forecast => {
+      this.emit(':tell', temperatureSsml(forecast));
+    });
+}
+
+function stopIntentHandler() {
   this.emit(':tell', "Okay");
 }
 
-function CancelIntentHandler() {
+function cancelIntentHandler() {
   this.emit(':tell', "Okay");
 }
 
-function HelpIntentHandler() {
+function helpIntentHandler() {
   this.emit(':ask', "To get the forecast for your current location, ask 'how's the weather'. You can also specify a location, like 'how's the weather in new york'");
 }
 
-function UnhandledIntentHandler() {
+function unhandledIntentHandler() {
   this.emit(':ask', "I didn't get that. To get the forecast for your current location, ask 'how's the weather'. You can also specify a location, like 'how's the weather in new york'");
 }
 
@@ -148,7 +190,7 @@ function UnhandledIntentHandler() {
 */
 
 // Format the Dark Sky forecast into a spoken sentence using SSML.
-function forecast_ssml(forecast) {
+function forecastSsml(forecast) {
   let text = `<p>Here's the forecast for <say-as interpret-as="address">${forecast.formatted_address}</say-as></p>`;
 
   if (forecast.currently) {
@@ -179,7 +221,7 @@ function forecast_ssml(forecast) {
 }
 
 // Format the Dark Sky forecast into plain text.
-function forecast_plain(forecast) {
+function forecastPlain(forecast) {
   let text = `Here's the forecast for ${forecast.formatted_address}`;
 
   if (forecast.currently) {
@@ -209,8 +251,30 @@ function forecast_plain(forecast) {
   return text;
 }
 
+function temperatureSsml(forecast) {
+  let text = '';
+
+  if (forecast.currently) {
+    let now = forecast.currently;
+    if (Math.round(now.temperature) === Math.round(now.apparentTemperature)) {
+      text += `<p>It's ${Math.round(now.temperature)}° right now.</p>`;
+    } else {
+      text += `<p>It's ${Math.round(now.temperature)}° right now, but it feels like ${Math.round(now.apparentTemperature)}°.</p>`;
+    }
+  }
+
+  if (forecast.hourly) {
+    let apparentTemperatures = forecast.hourly.data.map(d => d.apparentTemperature);
+    let high = Math.round(Math.max(...apparentTemperatures));
+    let low = Math.round(Math.min(...apparentTemperatures));
+    text += `\nThe high for today is ${high}°, and the low is ${low}°.`;
+  }
+
+  return text;
+}
+
 // Returns an image object with the forecast icon
-function forecast_image(forecast) {
+function forecastImage(forecast) {
  let images = ['clear-day',
                'clear-night',
                'rain',
