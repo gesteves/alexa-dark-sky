@@ -105,9 +105,7 @@ function getEchoAddress(device_id, consent_token) {
     json: true
   };
 
-  return request(opts).then(address => {
-    return echoAddressToString(address);
-  });
+  return request(opts).then(echoAddressToString);
 }
 
 function geocodeAddress(address) {
