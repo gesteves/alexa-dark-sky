@@ -1,6 +1,5 @@
 const Alexa = require('alexa-sdk');
-const request = require('request');
-const async = require('async');
+const request = require('request-promise-native');
 
 exports.handler = function (event, context, callback) {
   const alexa = Alexa.handler(event, context);
@@ -41,43 +40,47 @@ function EchoForecastIntentHandler() {
   let consent_token = this.attributes.consent_token;
   let formatted_address;
 
-  // 1. Get the user's consent token from Redis.
-  // 2. Use the token to request the Echo's address from Amazon.
-  // 2. Geocode the Echo's address to geographic coordinates.
-  // 3. Pass the coordinates to Dark Sky and get the forecast to that location.
-  // 4. Parse the forecast and emit it back to the user.
+  // 1. Use consent token to request the Echo's address from Amazon, then
+  // 2. Geocode the Echo's address to geographic coordinates, then
+  // 3. Pass the coordinates to Dark Sky and get the forecast to that location, then
+  // 4. Format the forecast and emit it back to the user.
   // TODO: Handle invalid locations
   // TODO: Handle nonexistant forecasts
   // TODO: Error handling
-  async.waterfall([
-    function (next) {
-      let options = {
-        url: `https://api.amazonalexa.com/v1/devices/${device_id}/settings/address`,
-        headers: {
-          'Authorization': `Bearer ${consent_token}`
-        }
+
+  let opts = {
+    url: `https://api.amazonalexa.com/v1/devices/${device_id}/settings/address`,
+    headers: {
+      'Authorization': `Bearer ${consent_token}`
+    },
+    json: true
+  };
+
+  request(opts)
+    .then((address) => {
+      let location = echoAddressToString(address);
+      opts = {
+        url: `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${process.env.MAPS_API_KEY}`,
+        json: true
       };
-      request(options, next);
-    },
-    function (error, body, next) {
-      let location = echoAddressToString(body);
-      request(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${process.env.MAPS_API_KEY}`, next);
-    },
-    function (error, body, next) {
-      let geocoded_location = JSON.parse(body);
-      if (geocoded_location.status === 'OK') {
-        formatted_address = geocoded_location.results[0].formatted_address;
-        let lat = geocoded_location.results[0].geometry.location.lat;
-        let long = geocoded_location.results[0].geometry.location.lng;
-        request(`https://api.darksky.net/forecast/${process.env.DARKSKY_API_KEY}/${lat},${long}`, next);
+      return request(opts);
+    })
+    .then((geocoded) => {
+      if (geocoded.status === 'OK') {
+        formatted_address = geocoded.results[0].formatted_address;
+        let lat = geocoded.results[0].geometry.location.lat;
+        let long = geocoded.results[0].geometry.location.lng;
+        opts = {
+          url: `https://api.darksky.net/forecast/${process.env.DARKSKY_API_KEY}/${lat},${long}`,
+          json: true
+        };
+        return request(opts);
       }
-    },
-    function (error, body, next) {
-      let forecast = JSON.parse(body);
+    })
+    .then((forecast) => {
       forecast.formatted_address = formatted_address;
       intent.emit(':tell', forecast_ssml(forecast));
-    }
-  ]);
+    });
 }
 
 // Handle a forecast intent when the user has included a city ("what's the weather in DC"),
@@ -87,31 +90,34 @@ function LocationForecastIntentHandler() {
   let location = this.event.request.intent.slots.city.value || this.event.request.intent.slots.address.value;
   let formatted_address;
 
-  // 1. Geocode the spoken location to geographic coordinates.
-  // 2. Pass the coordinates to Dark Sky and get the forecast to that location.
-  // 3. Parse the forecast and emit it back to the user.
+  // 1. Geocode the spoken location to geographic coordinates, then
+  // 2. Pass the coordinates to Dark Sky and get the forecast to that location, then
+  // 3. Format the forecast and emit it back to the user.
   // TODO: Handle invalid locations
   // TODO: Handle nonexistant forecasts
   // TODO: Error handling
-  async.waterfall([
-    function (next) {
-      request(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${process.env.MAPS_API_KEY}`, next);
-    },
-    function (error, body, next) {
-      let geocoded_location = JSON.parse(body);
-      if (geocoded_location.status === 'OK') {
-        formatted_address = geocoded_location.results[0].formatted_address;
-        let lat = geocoded_location.results[0].geometry.location.lat;
-        let long = geocoded_location.results[0].geometry.location.lng;
-        request(`https://api.darksky.net/forecast/${process.env.DARKSKY_API_KEY}/${lat},${long}`, next);
+
+  let opts = {
+    url: `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${process.env.MAPS_API_KEY}`,
+    json: true
+  };
+  request(opts)
+    .then((geocoded) => {
+      if (geocoded.status === 'OK') {
+        formatted_address = geocoded.results[0].formatted_address;
+        let lat = geocoded.results[0].geometry.location.lat;
+        let long = geocoded.results[0].geometry.location.lng;
+        opts = {
+          url: `https://api.darksky.net/forecast/${process.env.DARKSKY_API_KEY}/${lat},${long}`,
+          json: true
+        };
+        return request(opts);
       }
-    },
-    function (error, body, next) {
-      let forecast = JSON.parse(body);
+    })
+    .then((forecast) => {
       forecast.formatted_address = formatted_address;
       intent.emit(':tell', forecast_ssml(forecast));
-    }
-  ]);
+    });
 }
 
 /*
