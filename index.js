@@ -197,7 +197,7 @@ function forecastSsml(forecast) {
   }
 
   if (forecast.hourly) {
-    let apparentTemperatures = forecast.hourly.data.map(d => d.apparentTemperature);
+    let apparentTemperatures = forecast.hourly.data.slice(0, 24).map(d => d.apparentTemperature);
     let high = Math.round(Math.max(...apparentTemperatures));
     let low = Math.round(Math.min(...apparentTemperatures));
     text += `<p>Next 24 hours: ${forecast.hourly.summary.replace(/\.$/, '')}, with a high of ${high}° and a low of ${low}°.</p>`;
@@ -232,7 +232,7 @@ function forecastPlain(forecast) {
   }
 
   if (forecast.hourly) {
-    let apparentTemperatures = forecast.hourly.data.map(d => d.apparentTemperature);
+    let apparentTemperatures = forecast.hourly.data.slice(0, 24).map(d => d.apparentTemperature);
     let high = Math.round(Math.max(...apparentTemperatures));
     let low = Math.round(Math.min(...apparentTemperatures));
     text += `\nNext 24 hours: ${forecast.hourly.summary.replace(/\.$/, '')}, with a high of ${high}° and a low of ${low}°.`;
@@ -263,10 +263,10 @@ function temperatureSsml(forecast) {
   }
 
   if (forecast.hourly) {
-    let apparentTemperatures = forecast.hourly.data.map(d => d.apparentTemperature);
+    let apparentTemperatures = forecast.hourly.data.slice(0, 24).map(d => d.apparentTemperature);
     let high = Math.round(Math.max(...apparentTemperatures));
     let low = Math.round(Math.min(...apparentTemperatures));
-    text += `\nThe high for today is ${high}°, and the low is ${low}°.`;
+    text += `\nFor the next day, the high is ${high}°, and the low is ${low}°.`;
   }
 
   return text;
