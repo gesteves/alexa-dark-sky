@@ -179,15 +179,14 @@ function forecast_ssml(forecast) {
 
 // Returns the Echo's address as a sentence
 function echoAddressToString(address) {
-  let address_obj = JSON.parse(address);
-  var location_array = [];
-  location_array.push(address_obj.addressLine1);
-  location_array.push(address_obj.addressLine2);
-  location_array.push(address_obj.addressLine3);
-  location_array.push(address_obj.city);
-  location_array.push(address_obj.stateOrRegion);
-  location_array.push(address_obj.countryCode);
-  location_array.push(address_obj.postalCode);
+  let location_array = [];
+  location_array.push(address.addressLine1);
+  location_array.push(address.addressLine2);
+  location_array.push(address.addressLine3);
+  location_array.push(address.city);
+  location_array.push(address.stateOrRegion);
+  location_array.push(address.countryCode);
+  location_array.push(address.postalCode);
   return location_array.filter(function (i) {
     return i;
   }).join(', ');
