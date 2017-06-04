@@ -41,7 +41,7 @@ function launchRequestHandler() {
  * this method:
  * 1. Gets the address of the Echo, using the consent token,
  * 2. Geocodes the address using the Google Maps API,
- * 3. Gets the forecast for the address's coordiantes from Dark Sky, and
+ * 3. Gets the forecast for the address's coordinates from Dark Sky, and
  * 4. Emits an Alexa response with a card, with the forecast.
  * @todo Handle the case where the address is not set or the user hasn't granted permission.
  * @todo Handle the case where the address is not valid.
@@ -65,7 +65,7 @@ function echoForecastIntentHandler() {
  * specifying a city or address (e.g. "what's the weather in NYC?"). In this case,
  * this method:
  * 1. Geocodes the given location using the Google Maps API,
- * 2. Gets the forecast for the locations's coordiantes from Dark Sky, and
+ * 2. Gets the forecast for the locations's coordinates from Dark Sky, and
  * 3. Emits an Alexa response with a card, with the forecast.
  * @todo Handle the case where the location is not valid.
  * @todo Handle the case where the forecast is not available.
@@ -85,7 +85,7 @@ function locationForecastIntentHandler() {
  * This method:
  * 1. Gets the address of the Echo, using the consent token,
  * 2. Geocodes the address using the Google Maps API,
- * 3. Gets the forecast for the address's coordiantes from Dark Sky, and
+ * 3. Gets the forecast for the address's coordinates from Dark Sky, and
  * 4. Emits an Alexa response, with the temperature.
  * @todo Handle the case where the address is not set or the user hasn't granted permission.
  * @todo Handle the case where the address is not valid.
