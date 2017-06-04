@@ -1,5 +1,5 @@
 {
-  "name": "alexa-dark-sky-node",
+  "name": "alexa-dark-sky",
   "version": "1.0.0",
   "description": "Alexa skill for Dark Sky forecasts",
   "main": "index.js",
@@ -8,7 +8,7 @@
   },
   "author": "Guillermo Esteves",
   "license": "ISC",
-  "repository": "https://github.com/gesteves/alexa-dark-sky-node",
+  "repository": "https://github.com/gesteves/alexa-dark-sky",
   "dependencies": {
     "alexa-sdk": "^1.0.9",
     "imgix-core-js": "^1.0.6",
