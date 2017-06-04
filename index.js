@@ -144,30 +144,30 @@ function UnhandledIntentHandler() {
 
 // Format the Dark Sky forecast into a spoken sentence using SSML.
 function forecast_ssml(forecast) {
-  let text = `Here's the forecast for <say-as interpret-as="address">${forecast.formatted_address}</say-as>`;
+  let text = `<p>Here's the forecast for <say-as interpret-as="address">${forecast.formatted_address}</say-as></p>`;
 
   if (forecast.currently) {
     let now = forecast.currently;
     if (Math.round(now.temperature) === Math.round(now.apparentTemperature)) {
-      text += `\nRight now: ${now.summary}, ${Math.round(now.temperature)}°, with ${parseInt(now.humidity * 100)}% humidity, and a dew point of ${Math.round(now.dewPoint)}°`;
+      text += `<p>Right now: ${now.summary}, ${Math.round(now.temperature)}°, with ${parseInt(now.humidity * 100)}% humidity, and a dew point of ${Math.round(now.dewPoint)}°.</p>`;
     } else {
-      text += `\nRight now: ${now.summary}, ${Math.round(now.temperature)}° but it feels like ${Math.round(now.apparentTemperature)}°, with ${parseInt(now.humidity * 100)}% humidity, and a dew point of ${Math.round(now.dewPoint)}°`;
+      text += `<p>Right now: ${now.summary}, ${Math.round(now.temperature)}° but it feels like ${Math.round(now.apparentTemperature)}°, with ${parseInt(now.humidity * 100)}% humidity, and a dew point of ${Math.round(now.dewPoint)}°.</p>`;
     }
   }
 
   if (forecast.minutely) {
-    text += `\nNext hour: ${forecast.minutely.summary}`;
+    text += `<p>Next hour: ${forecast.minutely.summary}</p>`;
   }
 
   if (forecast.hourly) {
     let apparentTemperatures = forecast.hourly.data.map(d => d.apparentTemperature);
     let high = Math.round(Math.max(...apparentTemperatures));
     let low = Math.round(Math.min(...apparentTemperatures));
-    text += `\nNext 24 hours: ${forecast.hourly.summary.replace(/\.$/, '')}, with a high of ${high}° and a low of ${low}°.`;
+    text += `<p>Next 24 hours: ${forecast.hourly.summary.replace(/\.$/, '')}, with a high of ${high}° and a low of ${low}°.</p>`;
   }
 
   if (forecast.daily) {
-    text += `\nNext 7 days: ${forecast.daily.summary}`;
+    text += `<p>Next 7 days: ${forecast.daily.summary}</p>`;
   }
 
   return text;
