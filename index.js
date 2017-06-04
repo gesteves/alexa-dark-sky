@@ -1,5 +1,10 @@
 const Alexa = require('alexa-sdk');
+const Imgix = require('imgix-core-js');
 const request = require('request-promise-native');
+const imgix = new Imgix({
+  host: process.env.IMGIX_DOMAIN,
+  secureURLToken: process.env.IMGIX_TOKEN
+});
 
 exports.handler = function (event, context, callback) {
   const alexa = Alexa.handler(event, context);
@@ -82,7 +87,7 @@ function EchoForecastIntentHandler() {
     })
     .then(forecast => {
       forecast.formatted_address = formatted_address;
-      this.emit(':tell', forecast_ssml(forecast));
+      this.emit(':tellWithCard', forecast_ssml(forecast), 'Weather Forecast', forecast_plain(forecast), forecast_image(forecast));
     });
 }
 
@@ -118,7 +123,7 @@ function LocationForecastIntentHandler() {
     })
     .then(forecast => {
       forecast.formatted_address = formatted_address;
-      this.emit(':tell', forecast_ssml(forecast));
+      this.emit(':tellWithCard', forecast_ssml(forecast), 'Weather Forecast', forecast_plain(forecast), forecast_image(forecast));
     });
 }
 
@@ -171,6 +176,62 @@ function forecast_ssml(forecast) {
   }
 
   return text;
+}
+
+// Format the Dark Sky forecast into plain text.
+function forecast_plain(forecast) {
+  let text = `Here's the forecast for ${forecast.formatted_address}`;
+
+  if (forecast.currently) {
+    let now = forecast.currently;
+    if (Math.round(now.temperature) === Math.round(now.apparentTemperature)) {
+      text += `\nRight now: ${now.summary}, ${Math.round(now.temperature)}°, with ${parseInt(now.humidity * 100)}% humidity, and a dew point of ${Math.round(now.dewPoint)}°.`;
+    } else {
+      text += `\nRight now: ${now.summary}, ${Math.round(now.temperature)}° but it feels like ${Math.round(now.apparentTemperature)}°, with ${parseInt(now.humidity * 100)}% humidity, and a dew point of ${Math.round(now.dewPoint)}°.`;
+    }
+  }
+
+  if (forecast.minutely) {
+    text += `\nNext hour: ${forecast.minutely.summary}`;
+  }
+
+  if (forecast.hourly) {
+    let apparentTemperatures = forecast.hourly.data.map(d => d.apparentTemperature);
+    let high = Math.round(Math.max(...apparentTemperatures));
+    let low = Math.round(Math.min(...apparentTemperatures));
+    text += `\nNext 24 hours: ${forecast.hourly.summary.replace(/\.$/, '')}, with a high of ${high}° and a low of ${low}°.`;
+  }
+
+  if (forecast.daily) {
+    text += `\nNext 7 days: ${forecast.daily.summary}`;
+  }
+
+  return text;
+}
+
+// Returns an image object with the forecast icon
+function forecast_image(forecast) {
+ let images = ['clear-day',
+               'clear-night',
+               'rain',
+               'sleet',
+               'hail',
+               'snow',
+               'wind',
+               'fog',
+               'cloudy',
+               'partly-cloudy-day',
+               'partly-cloudy-night',
+               'thunderstorm',
+               'tornado'];
+
+  if (images.includes(forecast.currently.icon)) {
+    let url = `https://s3.amazonaws.com/${process.env.S3_BUCKET}/images/${forecast.currently.icon}.png`;
+    return {
+      smallImageUrl: imgix.buildURL(url, { w: 720 }),
+      largeImageUrl: imgix.buildURL(url, { w: 1200 })
+    };
+  }
 }
 
 // Returns the Echo's address as a sentence

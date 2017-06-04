@@ -11,6 +11,7 @@
   "repository": "https://github.com/gesteves/alexa-dark-sky-node",
   "dependencies": {
     "alexa-sdk": "^1.0.9",
+    "imgix-core-js": "^1.0.6",
     "request": "^2.81.0",
     "request-promise-native": "^1.0.4"
   }
