@@ -31,39 +31,21 @@ const handlers = {
 
 // Launch request, i.e. "Alexa, open Dark Sky"
 function launchRequestHandler () {
-  let intent = this;
-  let user_id = this.event.session.user.userId;
-  let device_id = this.event.context.System.device.deviceId;
-  let consent_token = this.event.session.user.permissions.consentToken;
-
-  this.attributes.consent_token = consent_token;
-  intent.emit(':ask', 'What do you want to know?', "I'm sorry, could you say that again?");
+  this.attributes.consent_token = this.event.session.user.permissions.consentToken;
+  this.emit(':ask', 'What do you want to know?', "I'm sorry, could you say that again?");
 }
 
 // Handle a forecast intent when the user has not included a location ("what's the weather").
 // In this case, get the forecast for the address set in the Echo, using the consent token.
 // TODO: Handle the case where the address is not set or the user hasn't granted permission.
 function echoForecastIntentHandler() {
-  let user_id = this.event.session.user.userId;
   let device_id = this.event.context.System.device.deviceId;
   let consent_token = this.attributes.consent_token;
-  let formatted_address;
 
   getEchoAddress(device_id, consent_token).
-    then(address => {
-      let location = echoAddressToString(address);
-      return geocodeLocation(location);
-    }).
-    then(geocoded_location => {
-      if (geocoded_location.status === 'OK') {
-        formatted_address = geocoded_location.results[0].formatted_address;
-        let lat = geocoded_location.results[0].geometry.location.lat;
-        let long = geocoded_location.results[0].geometry.location.lng;
-        return getForecast(lat, long);
-      }
-    }).
+    then(geocodeAddress).
+    then(getForecast).
     then(forecast => {
-      forecast.formatted_address = formatted_address;
       this.emit(':tellWithCard', forecastSsml(forecast), 'Weather Forecast', forecastPlain(forecast), forecastImage(forecast));
     });
 }
@@ -72,19 +54,10 @@ function echoForecastIntentHandler() {
 // or an address ("what's the address in 1600 pennsylvania avenue").
 function locationForecastIntentHandler() {
   let location = this.event.request.intent.slots.city.value || this.event.request.intent.slots.address.value;
-  let formatted_address;
 
-  geocodeLocation(location).
-    then(geocoded_location => {
-      if (geocoded_location.status === 'OK') {
-        let lat = geocoded_location.results[0].geometry.location.lat;
-        let long = geocoded_location.results[0].geometry.location.lng;
-        formatted_address = geocoded_location.results[0].formatted_address;
-        return getForecast(lat, long);
-      }
-    }).
+  geocodeAddress(location).
+    then(getForecast).
     then(forecast => {
-      forecast.formatted_address = formatted_address;
       this.emit(':tellWithCard', forecastSsml(forecast), 'Weather Forecast', forecastPlain(forecast), forecastImage(forecast));
     });
 }
@@ -96,17 +69,8 @@ function temperatureIntentHandler() {
   let consent_token = this.attributes.consent_token;
 
   getEchoAddress(device_id, consent_token).
-    then(address => {
-      let location = echoAddressToString(address);
-      return geocodeLocation(location);
-    }).
-    then(geocoded_location => {
-      if (geocoded_location.status === 'OK') {
-        let lat = geocoded_location.results[0].geometry.location.lat;
-        let long = geocoded_location.results[0].geometry.location.lng;
-        return getForecast(lat, long);
-      }
-    }).
+    then(geocodeAddress).
+    then(getForecast).
     then(forecast => {
       this.emit(':tell', temperatureSsml(forecast));
     });
@@ -141,28 +105,41 @@ function getEchoAddress(device_id, consent_token) {
     json: true
   };
 
-  return request(opts);
+  return request(opts).then(address => {
+    return echoAddressToString(address);
+  });
 }
 
-function geocodeLocation(location) {
+function geocodeAddress(address) {
   opts = {
-    url: `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${process.env.MAPS_API_KEY}`,
+    url: `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${process.env.MAPS_API_KEY}`,
     json: true
   };
-  return request(opts);
+  return request(opts).then(geocoded_address => {
+    if (geocoded_address.status === 'OK') {
+      return {
+        latitude: geocoded_address.results[0].geometry.location.lat,
+        longitude: geocoded_address.results[0].geometry.location.lng,
+        address: geocoded_address.results[0].formatted_address
+      };
+    }
+  });
 }
 
-function getForecast(lat, long) {
+function getForecast(geocoded_address) {
   opts = {
-    url: `https://api.darksky.net/forecast/${process.env.DARKSKY_API_KEY}/${lat},${long}`,
+    url: `https://api.darksky.net/forecast/${process.env.DARKSKY_API_KEY}/${geocoded_address.latitude},${geocoded_address.longitude}`,
     json: true
   };
-  return request(opts);
+  return request(opts).then(forecast => {
+    forecast.address = geocoded_address.address;
+    return forecast;
+  });
 }
 
 // Format the Dark Sky forecast into a spoken sentence using SSML.
 function forecastSsml(forecast) {
-  let text = `<p>Here's the forecast for <say-as interpret-as="address">${forecast.formatted_address}</say-as></p>`;
+  let text = `<p>Here's the forecast for <say-as interpret-as="address">${forecast.address}</say-as></p>`;
 
   if (forecast.currently) {
     let now = forecast.currently;
@@ -193,7 +170,7 @@ function forecastSsml(forecast) {
 
 // Format the Dark Sky forecast into plain text.
 function forecastPlain(forecast) {
-  let text = `Here's the forecast for ${forecast.formatted_address}`;
+  let text = `Here's the forecast for ${forecast.address}`;
 
   if (forecast.currently) {
     let now = forecast.currently;
