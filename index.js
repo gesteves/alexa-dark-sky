@@ -6,7 +6,7 @@ const imgix = new Imgix({
   secureURLToken: process.env.IMGIX_TOKEN
 });
 
-exports.handler = function (event, context, callback) {
+exports.handler = function(event, context, callback) {
   const alexa = Alexa.handler(event, context);
   alexa.appId = process.env.ALEXA_APP_ID;
   alexa.dynamoDBTableName = process.env.DYNAMODB_TABLE;
@@ -30,7 +30,7 @@ const handlers = {
  * consent token so their address can be used in future intents,
  * and emits a prompt for the user to issue another command.
  */
-function launchRequestHandler () {
+function launchRequestHandler() {
   this.attributes.consent_token = this.event.session.user.permissions.consentToken;
   this.emit(':ask', 'What do you want to know?', "I'm sorry, could you say that again?");
 }
@@ -118,7 +118,6 @@ function helpIntentHandler() {
 function unhandledIntentHandler() {
   this.emit(':ask', "I didn't get that. To get the forecast for your current location, ask 'how's the weather'. You can also specify a location, like 'how's the weather in new york'");
 }
-
 
 /**
  * Requests the Echo's address from the Alexa API.
