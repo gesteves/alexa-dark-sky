@@ -1,0 +1,57 @@
+{
+  "intents": [
+    {
+      "name": "AMAZON.CancelIntent",
+      "samples": []
+    },
+    {
+      "name": "AMAZON.HelpIntent",
+      "samples": []
+    },
+    {
+      "name": "AMAZON.StopIntent",
+      "samples": []
+    },
+    {
+      "name": "EchoForecastIntent",
+      "samples": [
+        "what's the weather",
+        "how's the weather",
+        "what's the forecast"
+      ],
+      "slots": []
+    },
+    {
+      "name": "LocationForecastIntent",
+      "samples": [
+        "how's the weather in {city} ",
+        "how's the weather in {address} ",
+        "what's the weather in {address} ",
+        "what's the weather in {city} ",
+        "what's the forecast for {city} "
+      ],
+      "slots": [
+        {
+          "name": "city",
+          "type": "AMAZON.US_CITY",
+          "samples": []
+        },
+        {
+          "name": "address",
+          "type": "AMAZON.StreetAddress",
+          "samples": []
+        }
+      ]
+    },
+    {
+      "name": "TemperatureIntent",
+      "samples": [
+        "what's the temperature",
+        "how's the temperature",
+        "what's the temperature outside",
+        "how's the temperature outside"
+      ],
+      "slots": []
+    }
+  ]
+}
