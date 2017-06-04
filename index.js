@@ -25,51 +25,78 @@ const handlers = {
   'Unhandled': unhandledIntentHandler
 };
 
-/*
-  INTENT HANDLERS
-*/
-
-// Launch request, i.e. "Alexa, open Dark Sky"
+/**
+ * Handles launch requests, i.e. "Alexa, open Dark Sky". Stores the user's
+ * consent token so their address can be used in future intents,
+ * and emits a prompt for the user to issue another command.
+ */
 function launchRequestHandler () {
   this.attributes.consent_token = this.event.session.user.permissions.consentToken;
   this.emit(':ask', 'What do you want to know?', "I'm sorry, could you say that again?");
 }
 
-// Handle a forecast intent when the user has not included a location ("what's the weather").
-// In this case, get the forecast for the address set in the Echo, using the consent token.
-// TODO: Handle the case where the address is not set or the user hasn't granted permission.
+/**
+ * Handles an `EchoForecastIntent`, which is when the user requests the forecast
+ * without specifying a location (e.g. "what's the weather?"). In this case,
+ * this method:
+ * 1. Gets the address of the Echo, using the consent token,
+ * 2. Geocodes the address using the Google Maps API,
+ * 3. Gets the forecast for the address's coordiantes from Dark Sky, and
+ * 4. Emits an Alexa response with a card, with the forecast.
+ * @todo Handle the case where the address is not set or the user hasn't granted permission.
+ * @todo Handle the case where the address is not valid.
+ * @todo Handle the case where the forecast is not available.
+ * to use it.
+ */
 function echoForecastIntentHandler() {
   let device_id = this.event.context.System.device.deviceId;
   let consent_token = this.attributes.consent_token;
 
   getEchoAddress(device_id, consent_token).
-    then(geocodeAddress).
+    then(geocodeLocation).
     then(getForecast).
     then(forecast => {
       this.emit(':tellWithCard', forecastSsml(forecast), 'Weather Forecast', forecastPlain(forecast), forecastImage(forecast));
     });
 }
 
-// Handle a forecast intent when the user has included a city ("what's the weather in DC"),
-// or an address ("what's the address in 1600 pennsylvania avenue").
+/**
+ * Handles a `LocationForecastIntent`, which is when the user requests the forecast
+ * specifying a city or address (e.g. "what's the weather in NYC?"). In this case,
+ * this method:
+ * 1. Geocodes the given location using the Google Maps API,
+ * 2. Gets the forecast for the locations's coordiantes from Dark Sky, and
+ * 3. Emits an Alexa response with a card, with the forecast.
+ * @todo Handle the case where the location is not valid.
+ * @todo Handle the case where the forecast is not available.
+ */
 function locationForecastIntentHandler() {
   let location = this.event.request.intent.slots.city.value || this.event.request.intent.slots.address.value;
 
-  geocodeAddress(location).
+  geocodeLocation(location).
     then(getForecast).
     then(forecast => {
       this.emit(':tellWithCard', forecastSsml(forecast), 'Weather Forecast', forecastPlain(forecast), forecastImage(forecast));
     });
 }
 
-// Returns the current, high, and low temperature at the Echo's location
-// TODO: Handle the case where the address is not set or the user hasn't granted permission.
+/**
+ * Handles a `TemperatureIntent`, which is when the user requests the temperature.
+ * This method:
+ * 1. Gets the address of the Echo, using the consent token,
+ * 2. Geocodes the address using the Google Maps API,
+ * 3. Gets the forecast for the address's coordiantes from Dark Sky, and
+ * 4. Emits an Alexa response, with the temperature.
+ * @todo Handle the case where the address is not set or the user hasn't granted permission.
+ * @todo Handle the case where the address is not valid.
+ * @todo Handle the case where the forecast is not available.
+ */
 function temperatureIntentHandler() {
   let device_id = this.event.context.System.device.deviceId;
   let consent_token = this.attributes.consent_token;
 
   getEchoAddress(device_id, consent_token).
-    then(geocodeAddress).
+    then(geocodeLocation).
     then(getForecast).
     then(forecast => {
       this.emit(':tell', temperatureSsml(forecast));
@@ -92,10 +119,14 @@ function unhandledIntentHandler() {
   this.emit(':ask', "I didn't get that. To get the forecast for your current location, ask 'how's the weather'. You can also specify a location, like 'how's the weather in new york'");
 }
 
-/*
-  HELPER FUNCTIONS
-*/
 
+/**
+ * Requests the Echo's address from the Alexa API.
+ * @param {string} device_id The Echo's device ID.
+ * @param {string} consent_token The user's consent token.
+ * @return {Promise.<string>} A promise that resolves to the address, formatted as
+ * a string.
+ */
 function getEchoAddress(device_id, consent_token) {
   let opts = {
     url: `https://api.amazonalexa.com/v1/devices/${device_id}/settings/address`,
@@ -107,34 +138,49 @@ function getEchoAddress(device_id, consent_token) {
   return request(opts).then(echoAddressToString);
 }
 
-function geocodeAddress(address) {
+/**
+ * Geocodes a location or address using the Google Maps API.
+ * @param {string} location An address or location (e.g. "1600 pennsylvania avenue, washington, dc",
+ * or "nyc").
+ * @return {Promise.<Object>} A promise that resolves to the first result from the API.
+ * @todo Handle when no results are found.
+ * @todo Handle when an error occurs.
+ */
+function geocodeLocation(location) {
   let opts = {
-    url: `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${process.env.MAPS_API_KEY}`,
+    url: `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${process.env.MAPS_API_KEY}`,
     json: true
   };
-  return request(opts).then(geocoded_address => {
-    if (geocoded_address.status === 'OK') {
-      return {
-        latitude: geocoded_address.results[0].geometry.location.lat,
-        longitude: geocoded_address.results[0].geometry.location.lng,
-        address: geocoded_address.results[0].formatted_address
-      };
+  return request(opts).then(api_response => {
+    if (api_response.status === 'OK') {
+      return api_response.results[0];
     }
   });
 }
 
-function getForecast(geocoded_address) {
+/**
+ * Gets the Dark Sky forecast for a given location.
+ * @param {Object} location A geocoded location returned from the Google Maps geocoding API.
+ * @return {Promise.<Object>} A promise that resolves to the Dark Sky API response.
+ * @todo Handle when no forecast is found.
+ * @todo Handle when an error occurs.
+ */
+function getForecast(location) {
   let opts = {
-    url: `https://api.darksky.net/forecast/${process.env.DARKSKY_API_KEY}/${geocoded_address.latitude},${geocoded_address.longitude}`,
+    url: `https://api.darksky.net/forecast/${process.env.DARKSKY_API_KEY}/${location.geometry.location.lat},${location.geometry.location.lng}`,
     json: true
   };
   return request(opts).then(forecast => {
-    forecast.address = geocoded_address.address;
+    forecast.address = location.formatted_address;
     return forecast;
   });
 }
 
-// Format the Dark Sky forecast into a spoken sentence using SSML.
+/**
+ * Formats a Dark Sky forecast into a spoken sentence with SSML.
+ * @param {Object} forecast A forecast object from the Dark Sky API.
+ * @return {string} A nicely formatted text of the forecast.
+ */
 function forecastSsml(forecast) {
   let text = `<p>Here's the forecast for <say-as interpret-as="address">${forecast.address}</say-as></p>`;
 
@@ -165,7 +211,11 @@ function forecastSsml(forecast) {
   return text;
 }
 
-// Format the Dark Sky forecast into plain text.
+/**
+ * Formats a Dark Sky forecast into plain text.
+ * @param {Object} forecast A forecast object from the Dark Sky API.
+ * @return {string} A nicely formatted text of the forecast.
+ */
 function forecastPlain(forecast) {
   let text = `Here's the forecast for ${forecast.address}`;
 
@@ -196,6 +246,11 @@ function forecastPlain(forecast) {
   return text;
 }
 
+/**
+ * Formats a Dark Sky temperature forecast into a spoken sentence with SSML.
+ * @param {Object} forecast A forecast object from the Dark Sky API.
+ * @return {string} A nicely formatted text of the temperature.
+ */
 function temperatureSsml(forecast) {
   let text = '';
 
@@ -218,7 +273,11 @@ function temperatureSsml(forecast) {
   return text;
 }
 
-// Returns an image object with the forecast icon
+/**
+ * Return an image object with the icons for the given forecast.
+ * @param {Object} forecast A forecast object from the Dark Sky API.
+ * @return {Object} A set of images describing the given forecast.
+ */
 function forecastImage(forecast) {
  let images = ['clear-day',
                'clear-night',
@@ -243,7 +302,11 @@ function forecastImage(forecast) {
   }
 }
 
-// Returns the Echo's address as a sentence
+/**
+ * Return an Echo's address as a sentence (e.g. "1600 Pennsylvania Avenue, Washington, DC")
+ * @param {Object} address An address object from the Alexa API.
+ * @return {string} A string with the Echo's address.
+ */
 function echoAddressToString(address) {
   let location_array = [];
   location_array.push(address.addressLine1);
