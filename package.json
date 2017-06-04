@@ -10,6 +10,8 @@
   "license": "ISC",
   "repository": "https://github.com/gesteves/alexa-dark-sky-node",
   "dependencies": {
-    "alexa-sdk": "^1.0.9"
+    "alexa-sdk": "^1.0.9",
+    "async": "^2.4.1",
+    "request": "^2.81.0"
   }
 }
