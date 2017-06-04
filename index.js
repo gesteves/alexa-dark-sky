@@ -31,7 +31,7 @@ const handlers = {
  * and emits a prompt for the user to issue another command.
  */
 function launchRequestHandler() {
-  this.attributes.consent_token = this.event.session.user.permissions.consentToken;
+  this.attributes.consent_token = this.event.context.System.user.permissions.consentToken;
   this.emit(':ask', 'What do you want to know?', "I'm sorry, could you say that again?");
 }
 
