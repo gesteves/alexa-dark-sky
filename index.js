@@ -1,13 +1,11 @@
 const Alexa = require('alexa-sdk');
 const request = require('request');
 const async = require('async');
-const Redis = require('redis');
-const redis = Redis.createClient(process.env.REDIS_URL);
 
 exports.handler = function (event, context, callback) {
-  // TODO: There's gotta be a better way of storing data in Lambda
   const alexa = Alexa.handler(event, context);
   alexa.appId = process.env.ALEXA_APP_ID;
+  alexa.dynamoDBTableName = process.env.DYNAMODB_TABLE;
   alexa.registerHandlers(handlers);
   alexa.execute();
 };
@@ -29,19 +27,8 @@ function LaunchRequestHandler () {
   let device_id = this.event.context.System.device.deviceId;
   let consent_token = this.event.session.user.permissions.consentToken;
 
-  // 1. Store the consent token from the request in redis so it can be used
-  // later to access the Echo's address.
-  // 2. Ask the user what they want to do.
-  // TODO: Handle the case where the user hasn't given permission to access
-  // the address.
-  async.waterfall([
-    function (next) {
-      redis.set(`lambda:alexa:user:${user_id}`, consent_token, next);
-    },
-    function (response, next) {
-      intent.emit(':ask', 'What do you want to know?', "I'm sorry, could you say that again?");
-    }
-  ]);
+  this.attributes.consent_token = consent_token;
+  intent.emit(':ask', 'What do you want to know?', "I'm sorry, could you say that again?");
 }
 
 // Handle a forecast intent when the user has not included a location ("what's the weather").
@@ -51,6 +38,7 @@ function EchoForecastIntentHandler() {
   let intent = this;
   let user_id = this.event.session.user.userId;
   let device_id = this.event.context.System.device.deviceId;
+  let consent_token = this.attributes.consent_token;
   let formatted_address;
 
   // 1. Get the user's consent token from Redis.
@@ -63,13 +51,10 @@ function EchoForecastIntentHandler() {
   // TODO: Error handling
   async.waterfall([
     function (next) {
-      redis.get(`lambda:alexa:user:${user_id}`, next);
-    },
-    function (token, next) {
       let options = {
         url: `https://api.amazonalexa.com/v1/devices/${device_id}/settings/address`,
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${consent_token}`
         }
       };
       request(options, next);
