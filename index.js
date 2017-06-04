@@ -38,7 +38,6 @@ function LaunchRequestHandler () {
 // In this case, get the forecast for the address set in the Echo, using the consent token.
 // TODO: Handle the case where the address is not set or the user hasn't granted permission.
 function EchoForecastIntentHandler() {
-  let intent = this;
   let user_id = this.event.session.user.userId;
   let device_id = this.event.context.System.device.deviceId;
   let consent_token = this.attributes.consent_token;
@@ -61,7 +60,7 @@ function EchoForecastIntentHandler() {
   };
 
   request(opts)
-    .then((address) => {
+    .then(address => {
       let location = echoAddressToString(address);
       opts = {
         url: `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${process.env.MAPS_API_KEY}`,
@@ -69,7 +68,7 @@ function EchoForecastIntentHandler() {
       };
       return request(opts);
     })
-    .then((geocoded) => {
+    .then(geocoded => {
       if (geocoded.status === 'OK') {
         formatted_address = geocoded.results[0].formatted_address;
         let lat = geocoded.results[0].geometry.location.lat;
@@ -81,16 +80,15 @@ function EchoForecastIntentHandler() {
         return request(opts);
       }
     })
-    .then((forecast) => {
+    .then(forecast => {
       forecast.formatted_address = formatted_address;
-      intent.emit(':tell', forecast_ssml(forecast));
+      this.emit(':tell', forecast_ssml(forecast));
     });
 }
 
 // Handle a forecast intent when the user has included a city ("what's the weather in DC"),
 // or an address ("what's the address in 1600 pennsylvania avenue").
 function LocationForecastIntentHandler() {
-  let intent = this;
   let location = this.event.request.intent.slots.city.value || this.event.request.intent.slots.address.value;
   let formatted_address;
 
@@ -106,7 +104,7 @@ function LocationForecastIntentHandler() {
     json: true
   };
   request(opts)
-    .then((geocoded) => {
+    .then(geocoded => {
       if (geocoded.status === 'OK') {
         formatted_address = geocoded.results[0].formatted_address;
         let lat = geocoded.results[0].geometry.location.lat;
@@ -118,9 +116,9 @@ function LocationForecastIntentHandler() {
         return request(opts);
       }
     })
-    .then((forecast) => {
+    .then(forecast => {
       forecast.formatted_address = formatted_address;
-      intent.emit(':tell', forecast_ssml(forecast));
+      this.emit(':tell', forecast_ssml(forecast));
     });
 }
 
@@ -162,9 +160,7 @@ function forecast_ssml(forecast) {
   }
 
   if (forecast.hourly) {
-    let apparentTemperatures = forecast.hourly.data.map(function (d) {
-      return d.apparentTemperature;
-    });
+    let apparentTemperatures = forecast.hourly.data.map(d => d.apparentTemperature);
     let high = Math.round(Math.max(...apparentTemperatures));
     let low = Math.round(Math.min(...apparentTemperatures));
     text += `\nNext 24 hours: ${forecast.hourly.summary.replace(/\.$/, '')}, with a high of ${high}° and a low of ${low}°.`;
@@ -187,7 +183,5 @@ function echoAddressToString(address) {
   location_array.push(address.stateOrRegion);
   location_array.push(address.countryCode);
   location_array.push(address.postalCode);
-  return location_array.filter(function (i) {
-    return i;
-  }).join(', ');
+  return location_array.filter(i => i).join(', ');
 }
