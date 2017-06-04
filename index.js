@@ -13,11 +13,16 @@ exports.handler = function (event, context, callback) {
 };
 
 const handlers = {
+    // Launch request, i.e. "Alexa, open Dark Sky"
     'LaunchRequest': function () {
       let intent = this;
       let user_id = this.event.session.user.userId;
       let device_id = this.event.context.System.device.deviceId;
       let consent_token = this.event.session.user.permissions.consentToken;
+
+      // 1. Store the consent token from the request in redis so it can be used
+      // later to access the Echo's address.
+      // 2. Ask the user what they want to do.
       async.waterfall([
         function (next) {
           redis.set(`lambda:alexa:user:${user_id}`, consent_token, next);
@@ -27,6 +32,8 @@ const handlers = {
         }
       ]);
     },
+    // Handle a forecast intent when the user has included a city ("what's the weather in DC"),
+    // or an address ("what's the address in 1600 pennsylvania avenue").
     'LocationForecastIntent': function () {
       let location;
       let intent = this;
@@ -38,6 +45,9 @@ const handlers = {
         location = this.event.request.intent.slots.city.value;
       }
 
+      // 1. Geocode the spoken location to geographic coordinates.
+      // 2. Pass the coordinates to Dark Sky and get the forecast to that location.
+      // 3. Parse the forecast and emit it back to the user.
       async.waterfall([
         function (next) {
           request(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${process.env.MAPS_API_KEY}`, next);
@@ -58,12 +68,20 @@ const handlers = {
         }
       ]);
     },
+    // Handle a forecast intent when the user has not included a location ("what's the weather").
+    // In this case, get the forecast for the address set in the Echo, using the consent token.
+    // TODO: Handle the case where the address is not set or the user hasn't granted permission.
     'EchoForecastIntent': function () {
       let intent = this;
       let user_id = this.event.session.user.userId;
       let device_id = this.event.context.System.device.deviceId;
       let formatted_address;
 
+      // 1. Get the user's consent token from Redis.
+      // 2. Use the token to request the Echo's address from Amazon.
+      // 2. Geocode the Echo's address to geographic coordinates.
+      // 3. Pass the coordinates to Dark Sky and get the forecast to that location.
+      // 4. Parse the forecast and emit it back to the user.
       async.waterfall([
         function (next) {
           redis.get(`lambda:alexa:user:${user_id}`, next);
@@ -110,6 +128,7 @@ const handlers = {
     }
 };
 
+// Helper function to format the Dark Sky forecast into a spoken sentence.
 function forecast_ssml(forecast) {
   let text = `Here's the forecast for <say-as interpret-as="address">${forecast.formatted_address}</say-as>`;
 
