@@ -133,11 +133,11 @@ function CancelIntentHandler() {
 }
 
 function HelpIntentHandler() {
-  this.emit(':ask', "To get the forecast for your current location, ask 'how's the weather?'. You can also specify a location, like 'how's the weather in new york'");
+  this.emit(':ask', "To get the forecast for your current location, ask 'how's the weather'. You can also specify a location, like 'how's the weather in new york'");
 }
 
 function UnhandledIntentHandler() {
-  this.emit(':ask', "I didn't get that. To get the forecast for your current location, ask 'how's the weather?'. You can also specify a location, like 'how's the weather in new york'");
+  this.emit(':ask', "I didn't get that. To get the forecast for your current location, ask 'how's the weather'. You can also specify a location, like 'how's the weather in new york'");
 }
 
 /*
