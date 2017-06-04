@@ -156,7 +156,7 @@ function forecast_ssml(forecast) {
     if (Math.round(now.temperature) === Math.round(now.apparentTemperature)) {
       text += `<p>Right now: ${now.summary}, ${Math.round(now.temperature)}°, with ${parseInt(now.humidity * 100)}% humidity, and a dew point of ${Math.round(now.dewPoint)}°.</p>`;
     } else {
-      text += `<p>Right now: ${now.summary}, ${Math.round(now.temperature)}° but it feels like ${Math.round(now.apparentTemperature)}°, with ${parseInt(now.humidity * 100)}% humidity, and a dew point of ${Math.round(now.dewPoint)}°.</p>`;
+      text += `<p>Right now: ${now.summary}, ${Math.round(now.temperature)}°, but it feels like ${Math.round(now.apparentTemperature)}°, with ${parseInt(now.humidity * 100)}% humidity, and a dew point of ${Math.round(now.dewPoint)}°.</p>`;
     }
   }
 
@@ -187,7 +187,7 @@ function forecast_plain(forecast) {
     if (Math.round(now.temperature) === Math.round(now.apparentTemperature)) {
       text += `\nRight now: ${now.summary}, ${Math.round(now.temperature)}°, with ${parseInt(now.humidity * 100)}% humidity, and a dew point of ${Math.round(now.dewPoint)}°.`;
     } else {
-      text += `\nRight now: ${now.summary}, ${Math.round(now.temperature)}° but it feels like ${Math.round(now.apparentTemperature)}°, with ${parseInt(now.humidity * 100)}% humidity, and a dew point of ${Math.round(now.dewPoint)}°.`;
+      text += `\nRight now: ${now.summary}, ${Math.round(now.temperature)}°, but it feels like ${Math.round(now.apparentTemperature)}°, with ${parseInt(now.humidity * 100)}% humidity, and a dew point of ${Math.round(now.dewPoint)}°.`;
     }
   }
 
