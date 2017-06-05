@@ -9,7 +9,6 @@ const imgix = new Imgix({
 exports.handler = function(event, context, callback) {
   const alexa = Alexa.handler(event, context);
   alexa.appId = process.env.ALEXA_APP_ID;
-  alexa.dynamoDBTableName = process.env.DYNAMODB_TABLE;
   alexa.registerHandlers(handlers);
   alexa.execute();
 };
@@ -26,12 +25,9 @@ const handlers = {
 };
 
 /**
- * Handles launch requests, i.e. "Alexa, open Dark Sky". Stores the user's
- * consent token so their address can be used in future intents,
- * and emits a prompt for the user to issue another command.
+ * Handles launch requests, i.e. "Alexa, open Dark Sky".
  */
 function launchRequestHandler() {
-  this.attributes.consent_token = this.event.context.System.user.permissions.consentToken;
   this.emit(':ask', 'What do you want to know?', "I'm sorry, could you say that again?");
 }
 
@@ -50,7 +46,7 @@ function launchRequestHandler() {
  */
 function echoForecastIntentHandler() {
   let device_id = this.event.context.System.device.deviceId;
-  let consent_token = this.attributes.consent_token;
+  let consent_token = this.event.context.System.user.permissions.consentToken;
 
   getEchoAddress(device_id, consent_token).
     then(geocodeLocation).
@@ -93,7 +89,7 @@ function locationForecastIntentHandler() {
  */
 function echoTemperatureIntentHandler() {
   let device_id = this.event.context.System.device.deviceId;
-  let consent_token = this.attributes.consent_token;
+  let consent_token = this.event.context.System.user.permissions.consentToken;
 
   getEchoAddress(device_id, consent_token).
     then(geocodeLocation).
@@ -125,7 +121,6 @@ function unhandledIntentHandler() {
  * @param {string} consent_token The user's consent token.
  * @return {Promise.<string>} A promise that resolves to the address, formatted as
  * a string.
- * @todo Figure out how to refresh an expired consent token.
  */
 function getEchoAddress(device_id, consent_token) {
   let opts = {
