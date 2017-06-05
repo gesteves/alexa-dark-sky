@@ -44,7 +44,7 @@
       ]
     },
     {
-      "name": "TemperatureIntent",
+      "name": "EchoTemperatureIntent",
       "samples": [
         "what's the temperature",
         "how's the temperature",

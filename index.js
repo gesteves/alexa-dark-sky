@@ -18,7 +18,7 @@ const handlers = {
   'LaunchRequest': launchRequestHandler,
   'LocationForecastIntent': locationForecastIntentHandler,
   'EchoForecastIntent': echoForecastIntentHandler,
-  'TemperatureIntent': temperatureIntentHandler,
+  'EchoTemperatureIntent': echoTemperatureIntentHandler,
   'AMAZON.StopIntent': stopIntentHandler,
   'AMAZON.CancelIntent': cancelIntentHandler,
   'AMAZON.HelpIntent': helpIntentHandler,
@@ -81,7 +81,7 @@ function locationForecastIntentHandler() {
 }
 
 /**
- * Handles a `TemperatureIntent`, which is when the user requests the temperature.
+ * Handles a `EchoTemperatureIntent`, which is when the user requests the temperature.
  * This method:
  * 1. Gets the address of the Echo, using the consent token,
  * 2. Geocodes the address using the Google Maps API,
@@ -91,7 +91,7 @@ function locationForecastIntentHandler() {
  * @todo Handle the case where the address is not valid.
  * @todo Handle the case where the forecast is not available.
  */
-function temperatureIntentHandler() {
+function echoTemperatureIntentHandler() {
   let device_id = this.event.context.System.device.deviceId;
   let consent_token = this.attributes.consent_token;
 
