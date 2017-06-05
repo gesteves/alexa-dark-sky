@@ -266,7 +266,7 @@ function temperatureSsml(forecast) {
     let apparentTemperatures = forecast.hourly.data.slice(0, 24).map(d => d.apparentTemperature);
     let high = Math.round(Math.max(...apparentTemperatures));
     let low = Math.round(Math.min(...apparentTemperatures));
-    text += `\nFor the next day, the high is ${high}°, and the low is ${low}°.`;
+    text += `\nFor the next 24 hours, the high is ${high}°, and the low is ${low}°.`;
   }
 
   return text;
