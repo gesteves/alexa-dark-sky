@@ -199,10 +199,6 @@ function forecastSsml(forecast) {
     text += `<p>Next 24 hours: ${forecast.hourly.summary.replace(/\.$/, '')}, with a high of ${high}° and a low of ${low}°.</p>`;
   }
 
-  if (forecast.daily) {
-    text += `<p>Next 7 days: ${forecast.daily.summary}</p>`;
-  }
-
   return text;
 }
 
@@ -232,10 +228,6 @@ function forecastPlain(forecast) {
     let high = Math.round(Math.max(...apparentTemperatures));
     let low = Math.round(Math.min(...apparentTemperatures));
     text += `\nNext 24 hours: ${forecast.hourly.summary.replace(/\.$/, '')}, with a high of ${high}° and a low of ${low}°.`;
-  }
-
-  if (forecast.daily) {
-    text += `\nNext 7 days: ${forecast.daily.summary}`;
   }
 
   return text;
