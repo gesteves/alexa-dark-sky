@@ -42,7 +42,6 @@ function launchRequestHandler() {
  * @todo Handle the case where the address is not set or the user hasn't granted permission.
  * @todo Handle the case where the address is not valid.
  * @todo Handle the case where the forecast is not available.
- * to use it.
  */
 function echoForecastIntentHandler() {
   let device_id = this.event.context.System.device.deviceId;
@@ -121,6 +120,7 @@ function unhandledIntentHandler() {
  * @param {string} consent_token The user's consent token.
  * @return {Promise.<string>} A promise that resolves to the address, formatted as
  * a string.
+ * @todo Handle the case where the user hasn't granted permission.
  */
 function getEchoAddress(device_id, consent_token) {
   let opts = {
