@@ -18,6 +18,7 @@ const handlers = {
   'LocationForecastIntent': locationForecastIntentHandler,
   'EchoForecastIntent': echoForecastIntentHandler,
   'EchoTemperatureIntent': echoTemperatureIntentHandler,
+  'StormIntent': stormIntentHandler,
   'AMAZON.StopIntent': stopIntentHandler,
   'AMAZON.CancelIntent': cancelIntentHandler,
   'AMAZON.HelpIntent': helpIntentHandler,
@@ -99,6 +100,29 @@ function echoTemperatureIntentHandler() {
     });
 }
 
+/**
+ * Handles a `StormIntent`, which is when the user asks if there are storms nearby.
+ * This method:
+ * 1. Gets the address of the Echo, using the consent token,
+ * 2. Geocodes the address using the Google Maps API,
+ * 3. Gets the forecast for the address's coordinates from Dark Sky, and
+ * 4. Emits an Alexa response, with the answer.
+ * @todo Handle the case where the address is not set or the user hasn't granted permission.
+ * @todo Handle the case where the address is not valid.
+ * @todo Handle the case where the forecast is not available.
+ */
+function stormIntentHandler() {
+  let device_id = this.event.context.System.device.deviceId;
+  let consent_token = this.event.context.System.user.permissions.consentToken;
+
+  getEchoAddress(device_id, consent_token).
+    then(geocodeLocation).
+    then(getForecast).
+    then(forecast => {
+      this.emit(':tell', stormSsml(forecast));
+    });
+}
+
 function stopIntentHandler() {
   this.emit(':tell', "Okay");
 }
@@ -108,7 +132,11 @@ function cancelIntentHandler() {
 }
 
 function helpIntentHandler() {
-  this.emit(':ask', "To get the forecast for your current location, ask 'how's the weather'. You can also specify a location, like 'how's the weather in new york'");
+  this.emit(':ask', `<p>Here are a few things you can do:</p>
+  <p>To get the forecast for your current location, ask 'how's the weather'.</p>
+  <p>You can also get the forecast at a specific location, like 'how's the weather in new york'<p>
+  <p>To get the current temperature, ask: 'what's the temperature'</p>
+  <p>To find the nearest storm, ask: 'where's the nearest storm'`);
 }
 
 function unhandledIntentHandler() {
@@ -261,6 +289,28 @@ function temperatureSsml(forecast) {
 }
 
 /**
+ * Returns the closest storm and its bearing, in an SSML-formatted sentence.
+ * @param {Object} forecast A forecast object from the Dark Sky API.
+ * @return {string} An SSML-formatted sentence.
+ */
+function stormSsml(forecast) {
+  let text;
+
+  if (forecast.currently) {
+    let now = forecast.currently;
+    if (!now.nearestStormDistance) {
+      text = "<p>Looks like there aren't any storms nearby.</p>";
+    } else if (now.nearestStormDistance === 0) {
+      text = "<p>There's a storm in the vicinity of your location!</p>";
+    } else {
+      text = `<p>The nearest storm is about ${now.nearestStormDistance} miles to the ${degreesToCompass(now.nearestStormBearing)} of your current location.</p>`;
+    }
+  }
+
+  return text;
+}
+
+/**
  * Return an image object with the icons for the given forecast.
  * @param {Object} forecast A forecast object from the Dark Sky API.
  * @return {Object} A set of images describing the given forecast.
@@ -304,4 +354,15 @@ function echoAddressToString(address) {
   location_array.push(address.countryCode);
   location_array.push(address.postalCode);
   return location_array.filter(i => i).join(', ');
+}
+
+/**
+ * Converts an direction to roughly a compass direction.
+ * @param {float} bearing A compass angle, with 0° at true north.
+ * @return {string} A cardinal direction.
+ */
+function degreesToCompass(bearing) {
+  var compass = ["North", "North East", "East", "South East", "South", "South West", "West", "North West"];
+  var val = Math.round((bearing/(360/compass.length)));
+  return compass[(val % compass.length)];
 }

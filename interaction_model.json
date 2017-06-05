@@ -22,6 +22,16 @@
       "slots": []
     },
     {
+      "name": "EchoTemperatureIntent",
+      "samples": [
+        "what's the temperature",
+        "how's the temperature",
+        "what's the temperature outside",
+        "how's the temperature outside"
+      ],
+      "slots": []
+    },
+    {
       "name": "LocationForecastIntent",
       "samples": [
         "how's the weather in {city} ",
@@ -44,12 +54,15 @@
       ]
     },
     {
-      "name": "EchoTemperatureIntent",
+      "name": "StormIntent",
       "samples": [
-        "what's the temperature",
-        "how's the temperature",
-        "what's the temperature outside",
-        "how's the temperature outside"
+        "where's the nearest storm",
+        "where's the closest storm",
+        "the closest storm",
+        "what's the closest storm",
+        "what's the nearest storm",
+        "are there any nearby storms",
+        "is there a storm nearby"
       ],
       "slots": []
     }
