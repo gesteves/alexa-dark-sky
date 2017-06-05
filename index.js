@@ -125,6 +125,7 @@ function unhandledIntentHandler() {
  * @param {string} consent_token The user's consent token.
  * @return {Promise.<string>} A promise that resolves to the address, formatted as
  * a string.
+ * @todo Figure out how to refresh an expired consent token.
  */
 function getEchoAddress(device_id, consent_token) {
   let opts = {
