@@ -26,7 +26,7 @@ const handlers = {
 };
 
 /**
- * Handles launch requests, i.e. "Alexa, open Dark Sky".
+ * Handles launch requests, i.e. "Alexa, open Cloud Cast".
  */
 function launchRequestHandler() {
   this.emit(':ask', 'What do you want to know?', "I'm sorry, could you say that again?");
@@ -40,7 +40,6 @@ function launchRequestHandler() {
  * 2. Geocodes the address using the Google Maps API,
  * 3. Gets the forecast for the address's coordinates from Dark Sky, and
  * 4. Emits an Alexa response with a card, with the forecast.
- * @todo Handle the case where the forecast is not available.
  */
 function echoForecastIntentHandler() {
   let device_id = this.event.context.System.device.deviceId;
@@ -60,7 +59,6 @@ function echoForecastIntentHandler() {
  * 1. Geocodes the given location using the Google Maps API,
  * 2. Gets the forecast for the locations's coordinates from Dark Sky, and
  * 3. Emits an Alexa response with a card, with the forecast.
- * @todo Handle the case where the forecast is not available.
  */
 function locationForecastIntentHandler() {
   let location = this.event.request.intent.slots.city.value || this.event.request.intent.slots.address.value;
@@ -78,7 +76,6 @@ function locationForecastIntentHandler() {
  * 2. Geocodes the address using the Google Maps API,
  * 3. Gets the forecast for the address's coordinates from Dark Sky, and
  * 4. Emits an Alexa response, with the temperature.
- * @todo Handle the case where the forecast is not available.
  */
 function echoTemperatureIntentHandler() {
   let device_id = this.event.context.System.device.deviceId;
@@ -98,7 +95,6 @@ function echoTemperatureIntentHandler() {
  * 2. Geocodes the address using the Google Maps API,
  * 3. Gets the forecast for the address's coordinates from Dark Sky, and
  * 4. Emits an Alexa response, with the answer.
- * @todo Handle the case where the forecast is not available.
  */
 function stormIntentHandler() {
   let device_id = this.event.context.System.device.deviceId;
@@ -136,7 +132,7 @@ function unhandledIntentHandler() {
  * @param {string} device_id The Echo's device ID.
  * @param {string} consent_token The user's consent token.
  * @return {Promise.<string>} A promise that resolves to the address, formatted as
- * a string; or a promise that is rejected if the user hasn't granted permission.
+ * a string; or is rejected if the user hasn't granted permission.
  */
 function getEchoAddress(device_id, consent_token) {
   let opts = {
@@ -161,8 +157,8 @@ function getEchoAddress(device_id, consent_token) {
  * Geocodes a location or address using the Google Maps API.
  * @param {string} location An address or location (e.g. "1600 pennsylvania avenue, washington, dc",
  * or "nyc").
- * @return {Promise.<Object>} A promise that resolves to the first result from the API, or a promise
- * that is rejected if the address is not valid.
+ * @return {Promise.<Object>} A promise that resolves to the first result from the API, or
+ * is rejected if the address is not valid.
  */
 function geocodeLocation(location) {
   let opts = {
@@ -183,18 +179,24 @@ function geocodeLocation(location) {
 /**
  * Gets the Dark Sky forecast for a given location.
  * @param {Object} location A geocoded location returned from the Google Maps geocoding API.
- * @return {Promise.<Object>} A promise that resolves to the Dark Sky API response.
- * @todo Handle when no forecast is found.
- * @todo Handle when an error occurs.
+ * @return {Promise.<Object>} A promise that resolves to the Dark Sky API response, or
+ * is rejected if the API doesn't return a forecast.
  */
 function getForecast(location) {
   let opts = {
     url: `https://api.darksky.net/forecast/${process.env.DARKSKY_API_KEY}/${location.geometry.location.lat},${location.geometry.location.lng}`,
-    json: true
+    json: true,
+    simple: false,
+    resolveWithFullResponse: true
   };
-  return request(opts).then(forecast => {
-    forecast.address = location.formatted_address;
-    return forecast;
+  return request(opts).then(response => {
+    if ((response.statusCode !== 200) || (!response.body.currently && !response.body.minutely && !response.body.hourly)) {
+      return Promise.reject(new Error("I'm sorry, I couldn't get the forecast for that location."));
+    } else {
+      let forecast = response.body;
+      forecast.address = location.formatted_address;
+      return forecast;
+    }
   });
 }
 
