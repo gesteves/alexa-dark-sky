@@ -29,7 +29,7 @@ const handlers = {
  * Handles launch requests, i.e. "Alexa, open Cloud Cast".
  */
 function launchRequestHandler() {
-  this.emit(':ask', 'What do you want to know?', "I'm sorry, could you say that again?");
+  this.emit(':ask', '<p>What would you like to know?</p>', "<p>I'm sorry, I didn't hear you. Could you say that again?</p>");
 }
 
 /**
@@ -108,21 +108,23 @@ function stormIntentHandler() {
 }
 
 function stopIntentHandler() {
-  this.emit(':tell', "Okay");
+  this.emit(':tell', "<p>Okay</p>");
 }
 
 function cancelIntentHandler() {
-  this.emit(':tell', "Okay");
+  this.emit(':tell', "<p>Okay</p>");
 }
 
 function helpIntentHandler() {
-  this.emit(':ask', `<p>Here are a few things you can do:</p>
-  <p>To get the forecast for your current location, ask 'how's the weather'.</p>
-  <p>You can also get the forecast at a specific location, like 'how's the weather in new york'<p>`);
+  let text = "<p>Here are a few things you can do:</p>";
+  text += "<p>To get the forecast for your current location, ask how's the weather.</p>";
+  text += "<p>You can also get the forecast at a specific location, like how's the weather in new york.</p>";
+  text += "<p>What would you like to know?</p>";
+  this.emit(":ask", text, "<p>I'm sorry, I didn't hear you. Could you say that again?</p>");
 }
 
 function unhandledIntentHandler() {
-  this.emit(':ask', "I didn't get that. To get the forecast for your current location, ask 'how's the weather'. You can also specify a location, like 'how's the weather in new york'");
+  this.emit(':ask', "<p>I didn't get that. What would you like to know?</p>", "<p>I'm sorry, I didn't hear you. Could you say that again?</p>");
 }
 
 /**
