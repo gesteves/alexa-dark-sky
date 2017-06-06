@@ -118,9 +118,7 @@ function cancelIntentHandler() {
 function helpIntentHandler() {
   this.emit(':ask', `<p>Here are a few things you can do:</p>
   <p>To get the forecast for your current location, ask 'how's the weather'.</p>
-  <p>You can also get the forecast at a specific location, like 'how's the weather in new york'<p>
-  <p>To get the current temperature, ask: 'what's the temperature'</p>
-  <p>To find the nearest storm, ask: 'where's the nearest storm'`);
+  <p>You can also get the forecast at a specific location, like 'how's the weather in new york'<p>`);
 }
 
 function unhandledIntentHandler() {
