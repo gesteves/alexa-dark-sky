@@ -29,7 +29,7 @@ const handlers = {
  * Handles launch requests, i.e. "Alexa, open Cloud Cast".
  */
 function launchRequestHandler() {
-  this.emit(':ask', '<p>What would you like to know?</p>', "<p>I'm sorry, I didn't hear you. Could you say that again?</p>");
+  this.emit(':ask', 'What would you like to know?', "I'm sorry, I didn't hear you. Could you say that again?");
 }
 
 /**
@@ -108,11 +108,11 @@ function stormIntentHandler() {
 }
 
 function stopIntentHandler() {
-  this.emit(':tell', "<p>Okay</p>");
+  this.emit(':tell', "Okay");
 }
 
 function cancelIntentHandler() {
-  this.emit(':tell', "<p>Okay</p>");
+  this.emit(':tell', "Okay");
 }
 
 function helpIntentHandler() {
@@ -120,11 +120,11 @@ function helpIntentHandler() {
   text += "<p>To get the forecast for your current location, ask how's the weather.</p>";
   text += "<p>You can also get the forecast at a specific location, like how's the weather in new york.</p>";
   text += "<p>What would you like to know?</p>";
-  this.emit(":ask", text, "<p>I'm sorry, I didn't hear you. Could you say that again?</p>");
+  this.emit(":ask", text, "I'm sorry, I didn't hear you. Could you say that again?");
 }
 
 function unhandledIntentHandler() {
-  this.emit(':ask', "<p>I didn't get that. What would you like to know?</p>", "<p>I'm sorry, I didn't hear you. Could you say that again?</p>");
+  this.emit(':ask', "I didn't get that. What would you like to know?", "I'm sorry, I didn't hear you. Could you say that again?");
 }
 
 /**
@@ -273,9 +273,9 @@ function temperatureSsml(forecast) {
   if (forecast.currently) {
     let now = forecast.currently;
     if (Math.round(now.temperature) === Math.round(now.apparentTemperature)) {
-      text += `<p>It's ${Math.round(now.temperature)}° right now.</p>`;
+      text += `It's ${Math.round(now.temperature)}° right now.`;
     } else {
-      text += `<p>It's ${Math.round(now.temperature)}° right now, but it feels like ${Math.round(now.apparentTemperature)}°.</p>`;
+      text += `It's ${Math.round(now.temperature)}° right now, but it feels like ${Math.round(now.apparentTemperature)}°.`;
     }
   }
 
@@ -283,7 +283,7 @@ function temperatureSsml(forecast) {
     let apparentTemperatures = forecast.hourly.data.slice(0, 24).map(d => d.apparentTemperature);
     let high = Math.round(Math.max(...apparentTemperatures));
     let low = Math.round(Math.min(...apparentTemperatures));
-    text += `\nFor the next 24 hours, the high is ${high}°, and the low is ${low}°.`;
+    text += `For the next 24 hours, the high is ${high}°, and the low is ${low}°.`;
   }
 
   return text;
@@ -300,11 +300,11 @@ function stormSsml(forecast) {
   if (forecast.currently) {
     let now = forecast.currently;
     if (!now.nearestStormDistance) {
-      text = "<p>Looks like there aren't any storms nearby.</p>";
+      text = "Looks like there aren't any storms nearby.";
     } else if (now.nearestStormDistance === 0) {
-      text = "<p>There's a storm in the vicinity of your location!</p>";
+      text = "There's a storm in the vicinity of your location!";
     } else {
-      text = `<p>The nearest storm is about ${now.nearestStormDistance} miles to the ${degreesToCompass(now.nearestStormBearing)} of your current location.</p>`;
+      text = `The nearest storm is about ${now.nearestStormDistance} miles to the ${degreesToCompass(now.nearestStormBearing)} of your current location.`;
     }
   }
 
