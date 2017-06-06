@@ -40,7 +40,6 @@ function launchRequestHandler() {
  * 2. Geocodes the address using the Google Maps API,
  * 3. Gets the forecast for the address's coordinates from Dark Sky, and
  * 4. Emits an Alexa response with a card, with the forecast.
- * @todo Handle the case where the address is not set or the user hasn't granted permission.
  * @todo Handle the case where the address is not valid.
  * @todo Handle the case where the forecast is not available.
  */
@@ -51,9 +50,8 @@ function echoForecastIntentHandler() {
   getEchoAddress(device_id, consent_token).
     then(geocodeLocation).
     then(getForecast).
-    then(forecast => {
-      this.emit(':tellWithCard', forecastSsml(forecast), 'Weather Forecast', forecastPlain(forecast), forecastImage(forecast));
-    });
+    then(forecast => { this.emit(':tellWithCard', forecastSsml(forecast), 'Weather Forecast', forecastPlain(forecast), forecastImage(forecast)); }).
+    catch(error => { this.emit(':tell', error.message); });
 }
 
 /**
@@ -83,7 +81,6 @@ function locationForecastIntentHandler() {
  * 2. Geocodes the address using the Google Maps API,
  * 3. Gets the forecast for the address's coordinates from Dark Sky, and
  * 4. Emits an Alexa response, with the temperature.
- * @todo Handle the case where the address is not set or the user hasn't granted permission.
  * @todo Handle the case where the address is not valid.
  * @todo Handle the case where the forecast is not available.
  */
@@ -106,7 +103,6 @@ function echoTemperatureIntentHandler() {
  * 2. Geocodes the address using the Google Maps API,
  * 3. Gets the forecast for the address's coordinates from Dark Sky, and
  * 4. Emits an Alexa response, with the answer.
- * @todo Handle the case where the address is not set or the user hasn't granted permission.
  * @todo Handle the case where the address is not valid.
  * @todo Handle the case where the forecast is not available.
  */
@@ -117,9 +113,8 @@ function stormIntentHandler() {
   getEchoAddress(device_id, consent_token).
     then(geocodeLocation).
     then(getForecast).
-    then(forecast => {
-      this.emit(':tell', stormSsml(forecast));
-    });
+    then(forecast => { this.emit(':tell', stormSsml(forecast)); }).
+    catch(error => { this.emit(':tell', error.message); });
 }
 
 function stopIntentHandler() {
@@ -148,7 +143,6 @@ function unhandledIntentHandler() {
  * @param {string} consent_token The user's consent token.
  * @return {Promise.<string>} A promise that resolves to the address, formatted as
  * a string.
- * @todo Handle the case where the user hasn't granted permission.
  */
 function getEchoAddress(device_id, consent_token) {
   let opts = {
@@ -156,9 +150,17 @@ function getEchoAddress(device_id, consent_token) {
     headers: {
       'Authorization': `Bearer ${consent_token}`
     },
-    json: true
+    json: true,
+    simple: false,
+    resolveWithFullResponse: true
   };
-  return request(opts).then(echoAddressToString);
+  return request(opts).then(response => {
+    if (response.statusCode === 200) {
+      return echoAddressToString(response.body);
+    } else {
+      return Promise.reject(new Error("I'm sorry, I couldn't get your location. Make sure you've given this skill permission to use your address in the Alexa app."));
+    }
+  });
 }
 
 /**
