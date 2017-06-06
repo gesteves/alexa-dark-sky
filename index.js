@@ -40,7 +40,6 @@ function launchRequestHandler() {
  * 2. Geocodes the address using the Google Maps API,
  * 3. Gets the forecast for the address's coordinates from Dark Sky, and
  * 4. Emits an Alexa response with a card, with the forecast.
- * @todo Handle the case where the address is not valid.
  * @todo Handle the case where the forecast is not available.
  */
 function echoForecastIntentHandler() {
@@ -61,7 +60,6 @@ function echoForecastIntentHandler() {
  * 1. Geocodes the given location using the Google Maps API,
  * 2. Gets the forecast for the locations's coordinates from Dark Sky, and
  * 3. Emits an Alexa response with a card, with the forecast.
- * @todo Handle the case where the location is not valid.
  * @todo Handle the case where the forecast is not available.
  */
 function locationForecastIntentHandler() {
@@ -69,9 +67,8 @@ function locationForecastIntentHandler() {
 
   geocodeLocation(location).
     then(getForecast).
-    then(forecast => {
-      this.emit(':tellWithCard', forecastSsml(forecast), 'Weather Forecast', forecastPlain(forecast), forecastImage(forecast));
-    });
+    then(forecast => { this.emit(':tellWithCard', forecastSsml(forecast), 'Weather Forecast', forecastPlain(forecast), forecastImage(forecast)); }).
+    catch(error => { this.emit(':tell', error.message); });
 }
 
 /**
@@ -81,7 +78,6 @@ function locationForecastIntentHandler() {
  * 2. Geocodes the address using the Google Maps API,
  * 3. Gets the forecast for the address's coordinates from Dark Sky, and
  * 4. Emits an Alexa response, with the temperature.
- * @todo Handle the case where the address is not valid.
  * @todo Handle the case where the forecast is not available.
  */
 function echoTemperatureIntentHandler() {
@@ -91,9 +87,8 @@ function echoTemperatureIntentHandler() {
   getEchoAddress(device_id, consent_token).
     then(geocodeLocation).
     then(getForecast).
-    then(forecast => {
-      this.emit(':tell', temperatureSsml(forecast));
-    });
+    then(forecast => { this.emit(':tell', temperatureSsml(forecast)); }).
+    catch(error => { this.emit(':tell', error.message); });
 }
 
 /**
@@ -103,7 +98,6 @@ function echoTemperatureIntentHandler() {
  * 2. Geocodes the address using the Google Maps API,
  * 3. Gets the forecast for the address's coordinates from Dark Sky, and
  * 4. Emits an Alexa response, with the answer.
- * @todo Handle the case where the address is not valid.
  * @todo Handle the case where the forecast is not available.
  */
 function stormIntentHandler() {
@@ -142,7 +136,7 @@ function unhandledIntentHandler() {
  * @param {string} device_id The Echo's device ID.
  * @param {string} consent_token The user's consent token.
  * @return {Promise.<string>} A promise that resolves to the address, formatted as
- * a string.
+ * a string; or a promise that is rejected if the user hasn't granted permission.
  */
 function getEchoAddress(device_id, consent_token) {
   let opts = {
@@ -167,18 +161,21 @@ function getEchoAddress(device_id, consent_token) {
  * Geocodes a location or address using the Google Maps API.
  * @param {string} location An address or location (e.g. "1600 pennsylvania avenue, washington, dc",
  * or "nyc").
- * @return {Promise.<Object>} A promise that resolves to the first result from the API.
- * @todo Handle when no results are found.
- * @todo Handle when an error occurs.
+ * @return {Promise.<Object>} A promise that resolves to the first result from the API, or a promise
+ * that is rejected if the address is not valid.
  */
 function geocodeLocation(location) {
   let opts = {
     url: `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${process.env.MAPS_API_KEY}`,
-    json: true
+    json: true,
+    simple: false,
+    resolveWithFullResponse: true
   };
-  return request(opts).then(api_response => {
-    if (api_response.status === 'OK') {
-      return api_response.results[0];
+  return request(opts).then(response => {
+    if ((response.statusCode === 200) && (response.body.status === 'OK')) {
+      return response.body.results[0];
+    } else {
+      return Promise.reject(new Error("I'm sorry, I couldn't understand that address."));
     }
   });
 }
