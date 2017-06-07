@@ -358,7 +358,7 @@ function echoAddressToString(address) {
 }
 
 /**
- * Converts an direction to roughly a compass direction.
+ * Roughly converts a direction in degrees to a compass direction.
  * @param {float} bearing A compass angle, with 0° at true north.
  * @return {string} A cardinal direction.
  */
