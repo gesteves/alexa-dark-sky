@@ -242,9 +242,9 @@ function forecastPlain(forecast) {
   if (forecast.currently) {
     let now = forecast.currently;
     if (Math.round(now.temperature) === Math.round(now.apparentTemperature)) {
-      text += `\nRight now: ${now.summary}, ${Math.round(now.temperature)}°, with ${parseInt(now.humidity * 100)}% humidity, and a dew point of ${Math.round(now.dewPoint)}°.`;
+      text += `\nRight now: ${now.summary}, ${Math.round(now.temperature)}°, with ${Math.round(now.humidity * 100)}% humidity, and a dew point of ${Math.round(now.dewPoint)}°.`;
     } else {
-      text += `\nRight now: ${now.summary}, ${Math.round(now.temperature)}°, but it feels like ${Math.round(now.apparentTemperature)}°, with ${parseInt(now.humidity * 100)}% humidity, and a dew point of ${Math.round(now.dewPoint)}°.`;
+      text += `\nRight now: ${now.summary}, ${Math.round(now.temperature)}°, but it feels like ${Math.round(now.apparentTemperature)}°, with ${Math.round(now.humidity * 100)}% humidity, and a dew point of ${Math.round(now.dewPoint)}°.`;
     }
   }
 
