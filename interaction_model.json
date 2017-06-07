@@ -36,9 +36,14 @@
       "samples": [
         "how's the weather in {city} ",
         "how's the weather in {address} ",
+        "how's the weather at {city} ",
+        "how's the weather at {address} ",
         "what's the weather in {address} ",
         "what's the weather in {city} ",
-        "what's the forecast for {city} "
+        "what's the weather at {address} ",
+        "what's the weather at {city} ",
+        "what's the forecast for {city} ",
+        "what's the forecast for {address} "
       ],
       "slots": [
         {
