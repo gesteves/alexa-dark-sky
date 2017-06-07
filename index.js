@@ -63,10 +63,14 @@ function echoForecastIntentHandler() {
 function locationForecastIntentHandler() {
   let location = this.event.request.intent.slots.city.value || this.event.request.intent.slots.address.value;
 
-  geocodeLocation(location).
-    then(getForecast).
-    then(forecast => { this.emit(':tellWithCard', forecastSsml(forecast), 'Weather Forecast', forecastPlain(forecast), forecastImage(forecast)); }).
-    catch(error => { this.emit(':tell', error.message); });
+  if (location) {
+    geocodeLocation(location).
+      then(getForecast).
+      then(forecast => { this.emit(':tellWithCard', forecastSsml(forecast), 'Weather Forecast', forecastPlain(forecast), forecastImage(forecast)); }).
+      catch(error => { this.emit(':tell', error.message); });
+  } else {
+    this.emit(':ask', "Please include the city or address you would like to look up, like what's the weather in New York.", "I'm sorry, I didn't hear you. Could you say that again?");
+  }
 }
 
 /**
