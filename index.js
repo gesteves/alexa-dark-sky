@@ -281,9 +281,9 @@ function temperatureSsml(forecast) {
   if (forecast.currently) {
     let now = forecast.currently;
     if (Math.round(now.temperature) === Math.round(now.apparentTemperature)) {
-      text += `It's ${Math.round(now.temperature)}° right now.`;
+      text += `It's ${Math.round(now.temperature)}° right now. `;
     } else {
-      text += `It's ${Math.round(now.temperature)}° right now, but it feels like ${Math.round(now.apparentTemperature)}°.`;
+      text += `It's ${Math.round(now.temperature)}° right now, but it feels like ${Math.round(now.apparentTemperature)}°. `;
     }
   }
 
