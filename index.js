@@ -26,7 +26,7 @@ const handlers = {
 };
 
 /**
- * Handles launch requests, i.e. "Alexa, open Cloud Cast".
+ * Handles launch requests, i.e. "Alexa, open [app name]".
  */
 function launchRequestHandler() {
   this.emit(':ask', 'What would you like to know?', "I'm sorry, I didn't hear you. Could you say that again?");
